@@ -6,8 +6,8 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-kompas_api_module = None 
-kompas_constants = None                 
+kompas_api_module = None
+kompas_constants = None
 
 processed_files = set()
 all_found_files = set()
@@ -36,9 +36,9 @@ def initialize_kompas_api(kompas_progid="Kompas.Application.7"):
                 print(f"Не удалось запустить Компас-3D {kompas_progid}: {e_dispatch}")
                 return None
 
-    iKompasApp_dispatch.Application.Visible = False 
-    kompas_api7_constants = '{75C9F5D0-B5B8-4526-8681-9903C567D2ED}' 
-    kompas_api7 = '{69AC2981-37C0-4379-84FD-5DD2F3C0A520}' 
+    iKompasApp_dispatch.Application.Visible = False
+    kompas_api7_constants = '{75C9F5D0-B5B8-4526-8681-9903C567D2ED}'
+    kompas_api7 = '{69AC2981-37C0-4379-84FD-5DD2F3C0A520}'
 
     try:
         print(f"Пробуем загрузить API модуль (GUID: {kompas_api7})...")
@@ -52,7 +52,7 @@ def initialize_kompas_api(kompas_progid="Kompas.Application.7"):
 
         if missing_interfaces:
             print(f"Интерфейс модуль ({_temp_interfaces_module.__name__}) загружен, но отсутствуют необходимые интерфейсы {', '.join(missing_interfaces)}")
-            print(f"Доступные аттрибуты: {str(dir(_temp_interfaces_module))[:300]}...") 
+            print(f"Доступные аттрибуты: {str(dir(_temp_interfaces_module))[:300]}...")
             kompas_api_module = None
 
         else:
@@ -88,19 +88,19 @@ def initialize_kompas_api(kompas_progid="Kompas.Application.7"):
 
     if not kompas_api_module:
         print(f"ФАТАЛЬНАЯ ОШИБКА: Модуль для интерфейсов не загружен (GUID: {kompas_api7})")
-        if iKompasApp_dispatch: iKompasApp_dispatch.Application.Quit(); 
+        if iKompasApp_dispatch: iKompasApp_dispatch.Application.Quit()
         return None
 
     if not kompas_constants or not hasattr(kompas_constants, 'ksDocumentAssembly'):
         print("ФАТАЛЬНАЯ ОШИБКА: Необходимые константы не были найдены")
-        if iKompasApp_dispatch: iKompasApp_dispatch.Application.Quit(); 
+        if iKompasApp_dispatch: iKompasApp_dispatch.Application.Quit()
         return None
 
     print("Успешная инициализация модуля констант и интерфейсов")
     return iKompasApp_dispatch
 
 def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
-    global kompas_api_module, kompas_constants 
+    global kompas_api_module, kompas_constants
     file_path = Path(file_path_str).resolve()
     normalized_file_path_str = str(file_path).lower()
 
@@ -113,7 +113,7 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
         print(f"  Предупреждение: Файл не найден '{file_path}', пропускаем.")
         return
 
-    all_found_files.add(file_path) 
+    all_found_files.add(file_path)
     print(f" Обрабатываем: {file_path}")
     doc_dispatch = None
 
@@ -123,7 +123,7 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
             print(f"  Не удаётся открыть файл'{file_path}'. Невозможно получить зависимости.")
             return
 
-        doc_type = -1 
+        doc_type = -1
         try:
             doc_typed_general = kompas_api_module.IKompasDocument(doc_dispatch)
             doc_type = doc_typed_general.DocumentType
@@ -136,15 +136,15 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
 
             try:
                 doc3D_interface = kompas_api_module.IKompasDocument3D(doc_dispatch)
-                if not doc3D_interface: 
+                if not doc3D_interface:
                     print("  Ошибка: doc3D_interface = None"); return
 
-                top_part_interface = doc3D_interface.TopPart 
-                if not top_part_interface: 
+                top_part_interface = doc3D_interface.TopPart
+                if not top_part_interface:
                     print("  Ошибка: IKompasDocument3D.TopPart = None."); return
 
-                components_collection_interface = top_part_interface.Parts 
-                if not components_collection_interface or components_collection_interface.Count == 0 : 
+                components_collection_interface = top_part_interface.Parts
+                if not components_collection_interface or components_collection_interface.Count == 0 :
                     print("  Предупреждение: IPart7.Parts или пустой, или неправильно определился")
 
                 else:
@@ -157,10 +157,10 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
 
                         try:
                             comp_as_ipart7 = kompas_api_module.IPart7(comp_item_dispatch)
-                            if not comp_as_ipart7: 
+                            if not comp_as_ipart7:
                                 print(f"  Ошибка: Item({i}) при cast в IPart7 = None. Пропуск"); continue
 
-                            comp_file_path_str = comp_as_ipart7.FileName 
+                            comp_file_path_str = comp_as_ipart7.FileName
                             if comp_file_path_str:
                                 comp_path_obj = Path(comp_file_path_str)
                                 if not comp_path_obj.is_absolute():
@@ -174,10 +174,10 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
                             else: 
                                 print(f"  Предупреждение: Item({i}) не имеет FileName или оно пустое.")
 
-                        except AttributeError as e_cast_ipart7: 
+                        except AttributeError as e_cast_ipart7:
                             print(f"  Не смогли обратиться к свойствам Item({i}): {e_cast_ipart7}")
 
-            except AttributeError as e_attr_typed_asm: 
+            except AttributeError as e_attr_typed_asm:
                 print(f"  Сборка не смогла быть определена: {e_attr_typed_asm} (используемый модуль: {kompas_api_module.__name__ if kompas_api_module else 'Н/Д'})")
 
         elif doc_type == kompas_constants.ksDocumentDrawing:
@@ -212,7 +212,7 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
                 else: 
                     print("  У чертежа нет листов, либо была ошибка при их получении.")
 
-            except AttributeError as e_attr_typed_drw: 
+            except AttributeError as e_attr_typed_drw:
                 print(f"  Не определился чертёж {e_attr_typed_drw}")
 
         elif doc_type == kompas_constants.ksDocumentPart:
@@ -221,7 +221,7 @@ def find_dependencies_recursive(file_path_str, kompas_app_dispatch_obj):
         else: 
             print(f"  Тип: Неизвестный тип ({doc_type}). Пропуск.")
 
-    except Exception as e_outer_unexpected: 
+    except Exception as e_outer_unexpected:
         print(f"Внешняя неожиданная ошибка при обработке {file_path}: {e_outer_unexpected}")
         import traceback
         traceback.print_exc()
@@ -246,7 +246,7 @@ def update_paths_in_packed_assemblies(packed_dir_path, kompas_app_dispatch_obj):
         print(f"  Обрабатываем сборочный файл для обновления путей: {asm_file_path.name}")
         doc_dispatch = None
         try:
-            doc_dispatch = kompas_app_dispatch_obj.Application.Documents.Open(str(asm_file_path), False, False) 
+            doc_dispatch = kompas_app_dispatch_obj.Application.Documents.Open(str(asm_file_path), False, False)
             if not doc_dispatch:
                 print(f"    Предупреждение: не был определён {asm_file_path.name} для обновления путей."); continue
             
@@ -277,7 +277,7 @@ def update_paths_in_packed_assemblies(packed_dir_path, kompas_app_dispatch_obj):
                     current_full_path_str = comp_as_ipart7.FileName
                     if not current_full_path_str: print(f"      Компонент {i} не имеет FileName. Пропуск."); continue
                     
-                    base_filename = Path(current_full_path_str).name 
+                    base_filename = Path(current_full_path_str).name
                     new_relative_path = f".\\{base_filename}" 
 
                     if current_full_path_str != new_relative_path and Path(current_full_path_str).name != new_relative_path :
@@ -318,17 +318,17 @@ def main():
 
     if not main_file_path.exists(): print(f"Ошибка: Основной файл '{main_file_path}' не найден"); return
 
-    actual_output_path = base_output_path 
+    actual_output_path = base_output_path
     if base_output_path.exists():
         if not base_output_path.is_dir(): print(f"Ошибка: выходной путь'{base_output_path}' уже существует и не является директорией."); return
-        if any(base_output_path.iterdir()): 
+        if any(base_output_path.iterdir()):
             print(f"Предупреждение: выходной путь '{base_output_path}' не пустой.")
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             unique_subdir_name = f"{main_file_path.stem}_packed_{timestamp}"
             actual_output_path = base_output_path / unique_subdir_name
 
     try:
-        actual_output_path.mkdir(parents=True, exist_ok=True) 
+        actual_output_path.mkdir(parents=True, exist_ok=True)
         print(f"Файлы будут здесь: {actual_output_path}")
     except OSError as e: print(f"Ошибка при создании директории {actual_output_path}: {e}"); return
 
@@ -374,7 +374,7 @@ def main():
         if args.zip:
             zip_arg_name = Path(args.zip)
             final_zip_name_str = zip_arg_name.name if zip_arg_name.suffix.lower() == '.zip' else zip_arg_name.name + '.zip'
-            zip_target_parent_dir = base_output_path.parent if str(base_output_path.parent) != str(base_output_path) else Path.cwd() 
+            zip_target_parent_dir = base_output_path.parent if str(base_output_path.parent) != str(base_output_path) else Path.cwd()
             zip_target_path = zip_target_parent_dir / final_zip_name_str
             print(f"\nАрхивируем содержание '{actual_output_path}' в '{zip_target_path}'...")
             try:
@@ -385,7 +385,15 @@ def main():
     except Exception as e_toplevel_unexpected:
         print(f"Неожиданная ошибка: {e_toplevel_unexpected}"); import traceback; traceback.print_exc()
     finally:
-        if kompas_app_instance: print("Компас продолжит работу.")
+        if kompas_app_instance:
+            print("Закрываем Компас...")
+            try:
+                kompas_app_instance.Quit()
+                kompas_app_instance = None
+            except pythoncom.com_error as e:
+                print("Ошибка при закрытии Компас-3D")
+            except AttributeError:
+                print("Не удалось вызвать Quit()")
         pythoncom.CoUninitialize(); print("\nСкрипт завершен.")
 
 if __name__ == "__main__":
