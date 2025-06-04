@@ -307,14 +307,19 @@ def update_paths_in_packed_assemblies(packed_dir_path, kompas_app_dispatch_obj):
 def main():
     parser = argparse.ArgumentParser(description="Компас-3D Pack-n-Go скрипт. Используйте его для передачи файлов")
     parser.add_argument("main_file", help="Путь к основному Компас-3D файлу (.a3d, .cdw).")
-    parser.add_argument("output_dir", help="Куда сохранить сборку и зависимости? (Вне зависимости от опции --zip). Выходной путь.")
+    parser.add_argument("output_dir", help="Куда сохранить сборку и зависимости? (Вне зависимости от опции --zip). Выходной путь.", nargs='?', default=None)
     parser.add_argument("--zip", help="Путь zip файла при желании. Абсолютный или релативный", nargs='?', const='packed_kompas_files.zip', type=str)
     parser.add_argument("--kompas_version", help="Компас ProgID. По умолчанию: Kompas.Application.7", default="Kompas.Application.7")
     parser.add_argument("--no_path_update", help="Без обновления зависимых путей. Необходимо будет восстановить оригинальную структуру или обновить все пути.", action="store_true")
 
     args = parser.parse_args()
     main_file_path = Path(args.main_file).resolve()
-    base_output_path = Path(args.output_dir).resolve()
+    if args.output_dir is None:
+        default_output_dirname = f"{main_file_path.stem}_packed_output"
+        base_output_path = (main_file_path.parent / default_output_dirname).resolve()
+        print(f"Выходная директория не указана. Используется по умолчанию: {base_output_path}")
+    else:
+        base_output_path = Path(args.output_dir).resolve()
 
     if not main_file_path.exists(): print(f"Ошибка: Основной файл '{main_file_path}' не найден"); return
 
@@ -370,10 +375,11 @@ def main():
             print("\nИз-за ошибок копирования, пропущено обновление зависимостей")
         else: 
             print("\Не было перемещено ни одного файла, пропущено обновление зависимостей.")
-
-        if args.zip:
+        try:
             zip_arg_name = Path(args.zip)
             final_zip_name_str = zip_arg_name.name if zip_arg_name.suffix.lower() == '.zip' else zip_arg_name.name + '.zip'
+        except:
+            final_zip_name_str = f"{main_file_path.stem}.zip"
             zip_target_parent_dir = base_output_path.parent if str(base_output_path.parent) != str(base_output_path) else Path.cwd()
             zip_target_path = zip_target_parent_dir / final_zip_name_str
             print(f"\nАрхивируем содержание '{actual_output_path}' в '{zip_target_path}'...")
@@ -398,3 +404,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    input("Нажмите любую клавишу для выхода...")
